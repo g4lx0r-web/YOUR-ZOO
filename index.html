@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Zoo Tycoon</title>
+    <style>
+        /* Retro Arcade CSS Styling */
+        body {
+            margin: 0;
+            background-color: #111;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 4px solid #000;
+            background-color: #90ee90;
+        }
+
+        /* Screen State Overlays */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #main-menu {
+            background-color: #191970;
+            background-image: linear-gradient(45deg, #141464 25%, transparent 25%), 
+                              linear-gradient(-45deg, #141464 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #141464 75%), 
+                              linear-gradient(-45deg, transparent 75%, #141464 75%);
+            background-size: 40px 40px;
+        }
+
+        #tutorial-screen {
+            background-color: #228b22;
+        }
+
+        /* UI Text Components */
+        h1 {
+            font-size: 48px;
+            color: #ffd700;
+            text-shadow: 4px 4px #000;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p {
+            font-size: 16px;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        /* Pixel Board Window Box */
+        .window-frame {
+            background-color: #f4a460;
+            border: 4px solid #000;
+            padding: 20px;
+            width: 500px;
+            box-shadow: 8px 8px 0px #000;
+        }
+
+        .window-header {
+            background-color: #8b4513;
+            color: white;
+            padding: 5px;
+            margin: -20px -20px 20px -20px;
+            font-weight: bold;
+            border-bottom: 4px solid #000;
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        /* Heavy Border Buttons */
+        .pixel-btn {
+            background-color: #8b4513;
+            color: white;
+            border: 4px solid #000;
+            padding: 10px 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            margin-top: 20px;
+        }
+
+        .pixel-btn:hover {
+            background-color: #6d320d;
+        }
+
+        .pixel-btn:active {
+            box-shadow: 1px 1px 0px #000;
+            transform: translate(3px, 3px);
+        }
+
+        /* Live Canvas Interface Elements */
+        canvas {
+            display: block;
+            background-color: #90ee90;
+        }
+
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: #8b4513;
+            border-bottom: 4px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 5;
+        }
+
+        .hud-metric {
+            color: #fff;
+        }
+        #hud-money { color: #ffd700; }
+
+        #shop-toggle {
+            background-color: #228b22;
+            margin: 0;
+            font-size: 14px;
+            padding: 5px 15px;
+        }
+
+        /* Dynamic Shop Side Panel Drawer */
+        #shop-panel {
+            position: absolute;
+            top: 64px;
+            right: 10px;
+            width: 260px;
+            background-color: #f4a460;
+            border: 4px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            display: none;
+            z-index: 5;
+            padding: 10px;
+        }
+
+        .shop-title {
+            background-color: #8b4513;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            padding: 3px;
+            margin: -10px -10px 10px -10px;
+            border-bottom: 4px solid #000;
+        }
+
+        .shop-item {
+            background: #e28a42;
+            border: 3px solid #000;
+            margin-bottom: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-info {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 14px;
+            color: #000;
+        }
+
+        .buy-btn {
+            background-color: #191970;
+            color: white;
+            border: 2px solid #000;
+            margin-top: 5px;
+            padding: 3px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        .buy-btn:disabled {
+            background-color: #777;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <!-- MAIN MENU SCREEN STATE -->
+        <div id="main-menu" class="screen">
+            <h1>PIXEL ZOO TYCOON</h1>
+            <p style="color: #fff; text-shadow: 2px 2px #000;">The Retro Web Management Sim</p>
+            <button class="pixel-btn" onclick="changeScene('tutorial')">START NEW GAME</button>
+        </div>
+
+        <!-- TUTORIAL SCREEN STATE -->
+        <div id="tutorial-screen" class="screen" style="display: none;">
+            <div class="window-frame">
+                <div class="window-header" id="tutorial-title">MANAGEMENT GUIDE (1/4)</div>
+                <p id="tutorial-text" style="color: #323232; font-weight: bold; text-align: left; min-height: 80px;"></p>
+                <div style="text-align: right;">
+                    <button class="pixel-btn" id="tutorial-btn" onclick="nextTutorialStep()">NEXT LESSON -></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVE GAMEPLAY INTERFACE HUD -->
+        <div id="hud" style="display: none;">
+            <div class="hud-metric">BUDGET: <span id="hud-money">$20.00</span></div>
+            <div class="hud-metric">ANIMALS: <span id="hud-animals">0</span></div>
+            <div class="hud-metric">GUESTS: <span id="hud-guests">0</span></div>
+            <button id="shop-toggle" class="pixel-btn" onclick="toggleShop()">OPEN SHOP</button>
+        </div>
+
+        <!-- SHOP PANEL DRAWER -->
+        <div id="shop-panel">
+            <div class="shop-title">ZOO ADOPTION CATALOG</div>
+            <div id="shop-container"></div>
+        </div>
+
+        <!-- LIVE ANIMATION SANDBOX ENGINE -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    </div>
+
+    <script>
+        // Setup Canvas Context
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = false; // Keep render logic pixelated
+
+        // Engine State Core
+        let gameState = "menu";
+        let money = 20.00;
+        let animals = [];
+        let visitors = [];
+        let isShopOpen = false;
+        
+        let visitorTimer = 0;
+        let incomeTimer = 0;
+
+        // Interactive Catalog Dataset
+        let shopItems = [
+            { id: "bunny", name: "Bunny", price: 0.00, color: "#e6e6e6", size: 12, boughtBefore: false },
+            { id: "fox", name: "Fox", price: 15.00, color: "#d35400", size: 16 },
+            { id: "bear", name: "Bear", price: 50.00, color: "#654321", size: 24 },
+            { id: "dino", name: "Dino", price: 150.00, color: "#27ae60", size: 28 }
+        ];
+
+        // Tutorial Pagination Arrays
+        let currentTutorialStep = 0;
+        const tutorialData = [
+            { title: "WELCOME MANAGER! (1/4)", text: "You are now in control of this open sanctuary reserve land.<br><br>Your strategic goal is simple: build a busy world-class tycoon zoo!" },
+            { title: "BUYING ANIMALS (2/4)", text: "Click the 'OPEN SHOP' button top-right to browse lifeforms.<br><br>More live animal variety inside the gates causes additional paying guests to travel here." },
+            { title: "SPECIAL PROMOTION (3/4)", text: "Your very first Bunny adoption transaction is completely 100% FREE!<br><br>Warning: Due to market demand, subsequent Bunny purchases spike up to $5.00!" },
+            { title: "EARNING REVENUE (4/4)", text: "Visitors cross through the bottom perimeter map boundaries naturally.<br><br>Cash automatically accumulates continuously every few seconds directly from current park visitors!" }
+        ];
+
+        // Simulation Entity Blueprint Modules
+        class Animal {
+            constructor(color, size) {
+                this.size = size;
+                this.color = color;
+                this.x = Math.random() * (canvas.width - 200) + 100;
+                this.y = Math.random() * (canvas.height - 250) + 150;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.bounceTicks = Math.random() * 100;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.bounceTicks++;
+
+                // Fenced enclosure collisions
+                if (this.x < 50 || this.x > canvas.width - 50 - this.size) this.vx *= -1;
+                if (this.y < 120 || this.y > canvas.height - 50 - this.size) this.vy *= -1;
+            }
+
+            draw() {
+                // Hop animation displacement
+                let jumpY = Math.abs(Math.sin(this.bounceTicks * 0.15) * 6);
+
+                // Flat block backing drop shadow
+                ctx.fillStyle = "rgba(40, 70, 40, 0.4)";
+                ctx.fillRect(this.x, this.y + this.size - 3, this.size, 5);
+
+                // Pixel Body
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - jumpY, this.size, this.size);
+
+                // Simple Facing Indicator Eye Pixel
+                ctx.fillStyle = "#000";
+                let eyeOffset = this.vx > 0 ? this.size - 4 : 2;
+                ctx.fillRect(this.x + eyeOffset, this.y - jumpY + 3, 3, 3);
+            }
+        }
+
+        class Visitor {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 100) + 50;
+                this.y = canvas.height + 10;
+                this.targetX = Math.random() * (canvas.width - 120) + 60;
+                this.targetY = Math.random() * (canvas.height - 220) + 130;
+                this.speed = Math.random() * 1 + 1;
+                this.color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                this.isLeaving = false;
+            }
+
+            update() {
+                if (!this.isLeaving) {
+                    let dx = this.targetX - this.x;
+                    let dy = this.targetY - this.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > 5) {
+                        this.x += (dx / dist) * this.speed;
+                        this.y += (dy / dist) * this.speed;
+                    } else if (Math.random() < 0.003) {
+                        this.isLeaving = true;
+                    }
+                } else {
+                    this.y += this.speed; // Depart southwards out of bounds
+                }
+            }
+
+            draw() {
+                // Main torso pixel square
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, 14, 18);
+                // Flesh head pixel block
+                ctx.fillStyle = "#f0c8a0";
+                ctx.fillRect(this.x + 2, this.y - 10, 10, 10);
+            }
+        }
+
+        // Scene Routing Machine
+        function changeScene(target) {
+            gameState = target;
+            document.getElementById("main-menu").style.display = "none";
+            document.getElementById("tutorial-screen").style.display = "none";
+            document.getElementById("hud").style.display = "none";
+            document.getElementById("shop-panel").style.display = "none";
+
+            if (target === "tutorial") {
+                document.getElementById("tutorial-screen").style.display = "flex";
+                currentTutorialStep = 0;
+                renderTutorialStep();
+            } else if (target === "gameplay") {
+                document.getElementById("hud").style.display = "flex";
+                buildShopUI();
+            }
+        }
+
+        // Tutorial Slide Controls
+        function renderTutorialStep() {
+            let step = tutorialData[currentTutorialStep];
+            document.getElementById("tutorial-title").innerText = step.title;
+            document.getElementById("tutorial-text").innerHTML = step.text;
+            
+            let btn = document.getElementById("tutorial-btn");
+            btn.innerText = (currentTutorialStep === tutorialData.length - 1) ? "START PLAYING ->" : "NEXT LESSON ->";
+        }
+
+        function nextTutorialStep() {
+            if (currentTutorialStep < tutorialData.length - 1) {
+                currentTutorialStep++;
+                renderTutorialStep();
+            } else {
+                changeScene("gameplay");
+            }
+        }
+
+        // Shop Overlay Draw Machinery
+        function toggleShop() {
+            isShopOpen = !isShopOpen;
+            document.getElementById("shop-panel").style.display = isShopOpen ? "block" : "none";
+            document.getElementById("shop-toggle").innerText = isShopOpen ? "CLOSE SHOP" : "OPEN SHOP";
+        }
+
+        function buildShopUI() {
+            const container = document.getElementById("shop-container");
+            container.innerHTML = "";
+
+            shopItems.forEach((item, index) => {
+                let div = document.createElement("div");
+                div.className = "shop-item";
+
+                let priceLabel = item.price === 0 ? "FREE" : `$${item.price.toFixed(2)}`;
+                
+                div.innerHTML = `
+                    <div class="item-info">
+                        <span>${item.name}</span>
+                        <span>${priceLabel}</span>
+                    </div>
+                    <button class="buy-btn" id="btn-buy-${item.id}" onclick="buyAnimal(${index})">ADOPT</button>
+                `;
+                container.appendChild(div);
+            });
+            updateShopButtonStates();
+        }
+
+        function updateShopButtonStates() {
+            if (gameState !== "gameplay") return;
+            shopItems.forEach(item => {
+                let btn = document.getElementById(`btn-buy-${item.id}`);
+                if (btn) {
+                    btn.disabled = (money < item.price);
+                }
+            });
+        }
+
+        // Financial Adoption Engine Rules Execution Loop
+        function buyAnimal(index) {
+            let item = shopItems[index];
+            if (money >= item.price) {
+                money -= item.price;
+                animals.push(new Animal(item.color, item.size));
+
+                // PRICE ELEVATION RULE INTERCEPTOR TRIGGER
+                if (item.id === "bunny" && !item.boughtBefore) {
+                    item.price = 5.00;
+                    item.boughtBefore = true;
+                    buildShopUI(); // Dynamically force repaint menu nodes
+                }
+
+                updateHUD();
+                updateShopButtonStates();
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById("hud-money").innerText = `$${money.toFixed(2)}`;
+            document.getElementById("hud-animals").innerText = animals.length;
+            document.getElementById("hud-guests").innerText = visitors.length;
+        }
+
+        // Realtime Animation Engine Loops
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === "gameplay") {
+                // 1. Spawning calculations matched to inventory values
+                let animalCount = animals.length;
+                let spawnRate = Math.max(30, 180 - (animalCount * 12)); 
+
+                visitorTimer++;
+                if (visitorTimer >= spawnRate && animalCount > 0) {
+                    visitors.push(new Visitor());
+                    visitorTimer = 0;
+                }
+
+                // 2. Continuous Financial Dividend Tick Rules
+                incomeTimer++;
+                if (incomeTimer >= 90) { // Fires roughly every 1.5 seconds flat
+                    let payout = visitors.length * 1.50;
+                    money += payout;
+                    incomeTimer = 0;
+                    updateHUD();
+                    updateShopButtonStates();
+                }
+
+                // 3. Environmental Drawing Pipeline
+                // Fencing perimeter structures
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = "#8b4513";
+                ctx.strokeRect(43, 103, canvas.width - 86, canvas.height - 146);
+                
+                // Sandbox interior earth path
+                ctx.fillStyle = "#f4a460";
+                ctx.fillRect(46, 106, canvas.width - 92, canvas.height - 152);
+
+                // Update & Render Entities
+                animals.forEach(animal => {
+                    animal.update();
+                    animal.draw();
+                });
+
+                // Filter visitors leaving boundaries safely
+                visitors = visitors.filter(visitor => {
+                    visitor.update();
+                    visitor.draw();
+                    return !(visitor.isLeaving && visitor.y > canvas.height + 15);
+                });
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Frame initialization launch procedures
+        gameLoop();
+    </script>
+</body>
+</html>
